@@ -5,6 +5,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.can.*;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Timer;
+
 /**
  * The VM is configured to automatically run this class, and to call the
  * functions corresponding to each mode, as described in the IterativeRobot
@@ -17,11 +20,12 @@ public class Robot extends IterativeRobot {
 	final String customAuto = "My Auto";
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
-	WPI_TalonSRX FrontLeft = new WPI_TalonSRX(0);
-	WPI_TalonSRX FrontRight = new WPI_TalonSRX(1);
-	WPI_TalonSRX RearLeft = new WPI_TalonSRX(2);
-	WPI_TalonSRX RearRight = new WPI_TalonSRX(3);
 	Joystick Xbox = new Joystick(1);
+	double Tide;
+	double Pods;
+	RobotDrive EvanDrive;
+	WPI_TalonSRX FrontLeft, RearLeft, FrontRight, RearRight;
+	
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -31,6 +35,11 @@ public class Robot extends IterativeRobot {
 		chooser.addDefault("Default Auto", defaultAuto);
 		chooser.addObject("My Auto", customAuto);
 		SmartDashboard.putData("Auto choices", chooser);
+		FrontLeft = new WPI_TalonSRX(1);
+		FrontRight = new WPI_TalonSRX(2);
+		RearLeft = new WPI_TalonSRX(3);
+		RearRight = new WPI_TalonSRX(4);
+		EvanDrive = new RobotDrive(FrontLeft, RearLeft, FrontRight, RearRight);
 	}
 
 	/**
@@ -73,7 +82,8 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-		
+    	EvanDrive.arcadeDrive(Xbox);
+    		Timer.delay(0.01);
 		
 	}
 
