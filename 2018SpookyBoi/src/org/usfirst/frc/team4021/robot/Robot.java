@@ -23,6 +23,7 @@ public class Robot extends IterativeRobot {
 	Joystick Xbox = new Joystick(1);
 	double Tide;
 	double Pods;
+	double Knuckles;
 	RobotDrive EvanDrive;
 	WPI_TalonSRX FrontLeft, RearLeft, FrontRight, RearRight;
 	
