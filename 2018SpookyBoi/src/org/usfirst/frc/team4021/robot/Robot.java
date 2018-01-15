@@ -5,8 +5,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.can.*;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.drive.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -41,6 +41,7 @@ public class Robot extends IterativeRobot {
 		RearLeft = new WPI_TalonSRX(3);
 		RearRight = new WPI_TalonSRX(4);
 		EvanDrive = new RobotDrive(FrontLeft, RearLeft, FrontRight, RearRight);
+		DifferentialDrive drive = new DifferentialDrive();
 	}
 
 	/**
