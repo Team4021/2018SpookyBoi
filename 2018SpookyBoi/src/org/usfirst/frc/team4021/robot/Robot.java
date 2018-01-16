@@ -24,6 +24,7 @@ public class Robot extends IterativeRobot {
 	Joystick Xbox = new Joystick(1);
 	double Tide;
 	double Pods;
+	double knuckles;
 		VictorSP FrontLeft = new VictorSP(0);
 		VictorSP RearLeft = new VictorSP(3);
 	   SpeedControllerGroup Drive_Left = new SpeedControllerGroup(FrontLeft, RearLeft);
