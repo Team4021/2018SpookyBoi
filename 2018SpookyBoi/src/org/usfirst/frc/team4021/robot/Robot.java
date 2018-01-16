@@ -87,7 +87,7 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 		Tide = Xbox.getRawAxis(1);
-		Pods = Xbox.getRawAxis(0);
+		Pods = Xbox.getRawAxis(2);
 		MainDrive.arcadeDrive(Tide, Pods);
 		
 	}
