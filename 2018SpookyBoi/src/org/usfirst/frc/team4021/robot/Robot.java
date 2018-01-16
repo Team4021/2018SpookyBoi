@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.can.*;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.*;
 
@@ -24,8 +25,16 @@ public class Robot extends IterativeRobot {
 	double Tide;
 	double Pods;
 	double Knuckles;
-	RobotDrive EvanDrive;
-	WPI_TalonSRX FrontLeft, RearLeft, FrontRight, RearRight;
+	 WPI_TalonSRX FrontLeft = new WPI_TalonSRX(0);
+	 WPI_TalonSRX RearLeft = new WPI_TalonSRX(1);
+	   SpeedControllerGroup Drive_Left = new SpeedControllerGroup(FrontLeft, RearLeft);
+
+	   WPI_TalonSRX FrontRight = new WPI_TalonSRX(3);
+	   WPI_TalonSRX RearRight = new WPI_TalonSRX(4);
+	   SpeedControllerGroup Drive_Right = new SpeedControllerGroup(FrontRight, RearRight);
+
+	   DifferentialDrive MainDrive = new DifferentialDrive(Drive_Left, Drive_Right);
+
 	
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -36,12 +45,6 @@ public class Robot extends IterativeRobot {
 		chooser.addDefault("Default Auto", defaultAuto);
 		chooser.addObject("My Auto", customAuto);
 		SmartDashboard.putData("Auto choices", chooser);
-		FrontLeft = new WPI_TalonSRX(1);
-		FrontRight = new WPI_TalonSRX(2);
-		RearLeft = new WPI_TalonSRX(3);
-		RearRight = new WPI_TalonSRX(4);
-		EvanDrive = new RobotDrive(FrontLeft, RearLeft, FrontRight, RearRight);
-		DifferentialDrive drive = new DifferentialDrive();
 	}
 
 	/**
@@ -84,8 +87,9 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-    	EvanDrive.arcadeDrive(Xbox);
-    		Timer.delay(0.01);
+		Tide = Xbox.getRawAxis(1);
+		Pods = Xbox.getRawAxis(0);
+		MainDrive.arcadeDrive(Tide, Pods);
 		
 	}
 
