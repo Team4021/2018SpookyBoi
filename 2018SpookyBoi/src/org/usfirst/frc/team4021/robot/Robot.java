@@ -25,6 +25,7 @@ public class Robot extends IterativeRobot {
 	double Tide;
 	double Pods;
 	double Roper;
+	double Useless;
 		VictorSP FrontLeft = new VictorSP(0);
 		VictorSP RearLeft = new VictorSP(3);
 	   SpeedControllerGroup Drive_Left = new SpeedControllerGroup(FrontLeft, RearLeft);
