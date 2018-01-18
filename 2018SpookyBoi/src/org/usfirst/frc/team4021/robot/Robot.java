@@ -24,7 +24,7 @@ public class Robot extends IterativeRobot {
 	Joystick Xbox = new Joystick(1);
 	double Tide;
 	double Pods;
-	double knuckles;
+	double Roper;
 		VictorSP FrontLeft = new VictorSP(0);
 		VictorSP RearLeft = new VictorSP(3);
 	   SpeedControllerGroup Drive_Left = new SpeedControllerGroup(FrontLeft, RearLeft);
@@ -34,6 +34,7 @@ public class Robot extends IterativeRobot {
 	   SpeedControllerGroup Drive_Right = new SpeedControllerGroup(FrontRight, RearRight);
 
 	   DifferentialDrive MainDrive = new DifferentialDrive(Drive_Left, Drive_Right);
+	   VictorSP RopeClimb = new VictorSP(5);
 
 	
 	/**
@@ -87,9 +88,12 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
+	//	System.out.println("hello");
+		Roper = Xbox.getRawAxis(5);
 		Tide = Xbox.getRawAxis(1);
-		Pods = Xbox.getRawAxis(2);
-		MainDrive.arcadeDrive(Tide, Pods);
+		Pods = Xbox.getRawAxis(0);
+		RopeClimb.set(Roper);
+		MainDrive.arcadeDrive(-Tide, Pods);
 		
 	}
 
