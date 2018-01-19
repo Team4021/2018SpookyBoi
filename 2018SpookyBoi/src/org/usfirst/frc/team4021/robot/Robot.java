@@ -92,7 +92,7 @@ public class Robot extends IterativeRobot {
 	public void teleopPeriodic() {
 		Pizza = Xbox.getRawAxis(1);
 		Taco = Xbox.getRawAxis(0);
-		PizzaTacoDrive.arcadeDrive(Pizza, Taco);
+		PizzaTacoDrive.arcadeDrive(-Pizza, Taco);
 	}
 
 	/**
