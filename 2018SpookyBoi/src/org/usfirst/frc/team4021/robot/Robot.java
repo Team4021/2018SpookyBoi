@@ -1,3 +1,10 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
 package org.usfirst.frc.team4021.robot;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
@@ -6,35 +13,31 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.can.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the
  * functions corresponding to each mode, as described in the IterativeRobot
  * documentation. If you change the name of this class or the package after
- * creating this project, you must also update the manifest file in the resource
- * directory.
+ * creating this project, you must also update the build.properties file in the
+ * project.
  */
 public class Robot extends IterativeRobot {
-	final String defaultAuto = "Default";
-	final String customAuto = "My Auto";
-	String autoSelected;
-	SendableChooser<String> chooser = new SendableChooser<>();
+	private static final String kDefaultAuto = "Default";
+	private static final String kCustomAuto = "My Auto";
+	private String m_autoSelected;
+	private SendableChooser<String> m_chooser = new SendableChooser<>();
+	double Taco;
+	double Pizza;
 	Joystick Xbox = new Joystick(1);
-	double Tide;
-	double Pods;
-	double Knuckles;
-	 WPI_TalonSRX FrontLeft = new WPI_TalonSRX(0);
-	 WPI_TalonSRX RearLeft = new WPI_TalonSRX(1);
-	   SpeedControllerGroup Drive_Left = new SpeedControllerGroup(FrontLeft, RearLeft);
-
-	   WPI_TalonSRX FrontRight = new WPI_TalonSRX(3);
-	   WPI_TalonSRX RearRight = new WPI_TalonSRX(4);
-	   SpeedControllerGroup Drive_Right = new SpeedControllerGroup(FrontRight, RearRight);
-
-	   DifferentialDrive MainDrive = new DifferentialDrive(Drive_Left, Drive_Right);
-
+	WPI_TalonSRX FrontLeft = new WPI_TalonSRX(2);
+	WPI_TalonSRX RearLeft = new WPI_TalonSRX(1);
+		SpeedControllerGroup Left = new SpeedControllerGroup(FrontLeft, RearLeft);
+	WPI_TalonSRX FrontRight = new WPI_TalonSRX(3);
+	WPI_TalonSRX RearRight = new WPI_TalonSRX(4);
+		SpeedControllerGroup Right = new SpeedControllerGroup(FrontRight, RearRight);
+		
+	DifferentialDrive PizzaTacoDrive = new DifferentialDrive(Left, Right);
 	
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -42,9 +45,9 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
-		chooser.addDefault("Default Auto", defaultAuto);
-		chooser.addObject("My Auto", customAuto);
-		SmartDashboard.putData("Auto choices", chooser);
+		m_chooser.addDefault("Default Auto", kDefaultAuto);
+		m_chooser.addObject("My Auto", kCustomAuto);
+		SmartDashboard.putData("Auto choices", m_chooser);
 	}
 
 	/**
@@ -54,50 +57,48 @@ public class Robot extends IterativeRobot {
 	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
 	 * getString line to get the auto name from the text box below the Gyro
 	 *
-	 * You can add additional auto modes by adding additional comparisons to the
-	 * switch structure below with additional strings. If using the
+	 * <p>You can add additional auto modes by adding additional comparisons to
+	 * the switch structure below with additional strings. If using the
 	 * SendableChooser make sure to add them to the chooser code above as well.
 	 */
 	@Override
 	public void autonomousInit() {
-		autoSelected = chooser.getSelected();
+		m_autoSelected = m_chooser.getSelected();
 		// autoSelected = SmartDashboard.getString("Auto Selector",
 		// defaultAuto);
-		System.out.println("Auto selected: " + autoSelected);
+		System.out.println("Auto selected: " + m_autoSelected);
 	}
 
 	/**
-	 * This function is called periodically during autonomous
+	 * This function is called periodically during autonomous.
 	 */
 	@Override
 	public void autonomousPeriodic() {
-		switch (autoSelected) {
-		case customAuto:
-			// Put custom auto code here
-			break;
-		case defaultAuto:
-		default:
-			// Put default auto code here
-			break;
+		switch (m_autoSelected) {
+			case kCustomAuto:
+				// Put custom auto code here
+				break;
+			case kDefaultAuto:
+			default:
+				// Put default auto code here
+				break;
 		}
 	}
 
 	/**
-	 * This function is called periodically during operator control
+	 * This function is called periodically during operator control.
 	 */
 	@Override
 	public void teleopPeriodic() {
-		Tide = Xbox.getRawAxis(1);
-		Pods = Xbox.getRawAxis(0);
-		MainDrive.arcadeDrive(Tide, Pods);
-		
+		Pizza = Xbox.getRawAxis(1);
+		Taco = Xbox.getRawAxis(0);
+		PizzaTacoDrive.arcadeDrive(Pizza, Taco);
 	}
 
 	/**
-	 * This function is called periodically during test mode
+	 * This function is called periodically during test mode.
 	 */
 	@Override
 	public void testPeriodic() {
 	}
 }
-
