@@ -29,6 +29,7 @@ public class Robot extends IterativeRobot {
 	private SendableChooser<String> m_chooser = new SendableChooser<>();
 	double Taco;
 	double Pizza;
+	double useless;
 	Joystick Xbox = new Joystick(1);
 	WPI_TalonSRX FrontLeft = new WPI_TalonSRX(2);
 	WPI_TalonSRX RearLeft = new WPI_TalonSRX(1);
