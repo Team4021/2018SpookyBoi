@@ -8,6 +8,8 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.drive.*;
 import edu.wpi.first.wpilibj.VictorSP;
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.CameraServer;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -21,11 +23,10 @@ public class Robot extends IterativeRobot {
 	final String customAuto = "My Auto";
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
-	Joystick Xbox = new Joystick(1);
 	double Tide;
 	double Pods;
 	double Roper;
-	double Useless;
+		Joystick Xbox = new Joystick(1);
 		VictorSP FrontLeft = new VictorSP(0);
 		VictorSP RearLeft = new VictorSP(3);
 	   SpeedControllerGroup Drive_Left = new SpeedControllerGroup(FrontLeft, RearLeft);
@@ -36,6 +37,8 @@ public class Robot extends IterativeRobot {
 
 	   DifferentialDrive MainDrive = new DifferentialDrive(Drive_Left, Drive_Right);
 	   VictorSP RopeClimb = new VictorSP(5);
+	   UsbCamera Cam0;
+	   UsbCamera Cam1;
 
 	
 	/**
@@ -47,6 +50,9 @@ public class Robot extends IterativeRobot {
 		chooser.addDefault("Default Auto", defaultAuto);
 		chooser.addObject("My Auto", customAuto);
 		SmartDashboard.putData("Auto choices", chooser);
+		Cam0 = CameraServer.getInstance().startAutomaticCapture(0);
+		Cam1 = CameraServer.getInstance().startAutomaticCapture(1);
+
 	}
 
 	/**
