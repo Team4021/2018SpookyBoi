@@ -14,6 +14,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -32,6 +34,8 @@ public class Robot extends IterativeRobot {
 	Joystick Joy = new Joystick(1);
 	boolean Yeet = Joy.getRawButton(1);
 	double pls = 5;
+	private double distance;
+	
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -45,7 +49,7 @@ public class Robot extends IterativeRobot {
 		sampleEncoder1 = new Encoder ( 0, 1, false, EncodingType.k4X);
 		sampleEncoder1.setMaxPeriod(.1);
 		sampleEncoder1.setMinRate(.01);
-		sampleEncoder1.setDistancePerPulse(.045);
+		sampleEncoder1.setDistancePerPulse(.062);
 		sampleEncoder1.setReverseDirection(false);
 		sampleEncoder1.setSamplesToAverage(7);
 		
@@ -78,22 +82,32 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 		switch (m_autoSelected) {
 			case kCustomAuto:
-				//sampleEncoder1 = new Encoder ( 0, 1, false, EncodingType.k1X);
+				sampleEncoder1 = new Encoder ( 0, 1, false, EncodingType.k1X);
 				sampleEncoder1.setMaxPeriod(.1);
 				sampleEncoder1.setMinRate(10);
-				sampleEncoder1.setDistancePerPulse(.045);
+				sampleEncoder1.setDistancePerPulse(.062);
 				sampleEncoder1.setReverseDirection(true);
 				sampleEncoder1.setSamplesToAverage(7);
-				int count = sampleEncoder1.get();
 				double distance = sampleEncoder1.getDistance();
+				int count = sampleEncoder1.get();
 				double period = sampleEncoder1.getPeriod();
 				double rate = sampleEncoder1.getRate();
 				boolean direction = sampleEncoder1.getDirection();
 				boolean stopped = sampleEncoder1.getStopped();
+				if (distance <= 144)
+				{
+					talon1.set(0.5);
+				}
+				else
+				{
+					talon1.set(0);
+				}
 			case kDefaultAuto:
 			default:
 				
 				break;
+				
+				
 		}
 	}
 
@@ -102,7 +116,9 @@ public class Robot extends IterativeRobot {
 	 */
 	//@override
 	public void teleopPeriodic() {
+		double distance = sampleEncoder1.getDistance();
 		SmartDashboard.putNumber("pls", pls);
+		SmartDashboard.putNumber("Distance", distance);
 		/*if  (Joy.getRawButton(1) == true) 
 		{
 			talon1.set(0.5);
