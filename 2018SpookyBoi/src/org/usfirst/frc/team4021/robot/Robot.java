@@ -8,18 +8,25 @@
 package org.usfirst.frc.team4021.robot;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import com.ctre.phoenix.motorcontrol.can.*;
-import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.SpeedController;
+import edu.wpi.first.wpilibj.CounterBase.EncodingType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
+import com.ctre.phoenix.motorcontrol.can.*;
+import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.*;
+import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.CameraServer;
-import edu.wpi.first.wpilibj.AnalogGyro;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Relay;
+import edu.wpi.first.wpilibj.VictorSP;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.VictorSP;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -29,26 +36,37 @@ import edu.wpi.first.wpilibj.Timer;
  * project.
  */
 public class Robot extends IterativeRobot {
-	// private static final String kDefaultAuto = "Default";
-	// private static final String kCustomAuto = "My Auto";
-	// private String m_autoSelected;
-	// private SendableChooser<String> m_chooser = new SendableChooser<>();
+	// final String defaultAuto = "Left";
+	// final String midAuto = "Mid";
+	// final String rightAuto = "Right";
+	// SendableChooser<String> chooser = new SendableChooser<>();
 	double Taco;
 	double Pizza;
+	int Sandwich;
 	AnalogGyro Turny;
 	Joystick Xbox = new Joystick(1);
+	VictorSP Claws = new VictorSP(0);
+	WPI_TalonSRX ScissorLift = new WPI_TalonSRX(5);
 	WPI_TalonSRX FrontLeft = new WPI_TalonSRX(2);
 	WPI_TalonSRX RearLeft = new WPI_TalonSRX(1);
+	WPI_TalonSRX FrontRight = new WPI_TalonSRX(3);
+	WPI_TalonSRX RearRight = new WPI_TalonSRX(4);
 	SpeedControllerGroup Left = new SpeedControllerGroup(FrontLeft, RearLeft);
-//	WPI_TalonSRX FrontRight = new WPI_TalonSRX(3);
-//	WPI_TalonSRX RearRight = new WPI_TalonSRX(4);
-	//SpeedControllerGroup Right = new SpeedControllerGroup(FrontRight, RearRight);
-	double Kp = 0.03;
+	SpeedControllerGroup Right = new SpeedControllerGroup(FrontRight, RearRight);
+	SpeedControllerGroup Scissors = new SpeedControllerGroup(ScissorLift);
 	double angleTurn;
 	double angleRate;
 	double angle;
-	DifferentialDrive PizzaTacoDrive = new DifferentialDrive(Left, Left);
-
+	double enkersDistance;
+	double onkleDistance;
+	double scissorsDistance;
+	int RobotSide;
+	int ScaleSide;
+	Encoder leftEncoder;
+	Encoder rightEncoder;
+	Encoder scissorsEncoder;
+	int AutoStep;
+	DifferentialDrive PizzaTacoDrive;
 	UsbCamera Cam0;
 	UsbCamera Cam1;
 
@@ -58,11 +76,13 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
-		// m_chooser.addDefault("Default Auto", kDefaultAuto);
-		// m_chooser.addObject("My Auto", kCustomAuto);
-		// SmartDashboard.putData("Auto choices", m_chooser);
 		Turny = new AnalogGyro(0);
-
+		leftEncoder = new Encoder(0, 1, false, EncodingType.k4X);
+		rightEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+		scissorsEncoder = new Encoder(4, 5, false, EncodingType.k4X);
+		leftEncoder.setDistancePerPulse(0.0622);
+		rightEncoder.setDistancePerPulse(0.0622);
+		scissorsEncoder.setDistancePerPulse(0.0622);
 		// Cam0 = CameraServer.getInstance().startAutomaticCapture(0);
 		// Cam1 = CameraServer.getInstance().startAutomaticCapture(1);
 	}
@@ -81,11 +101,24 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void autonomousInit() {
-		// m_autoSelected = m_chooser.getSelected();
-		// autoSelected = SmartDashboard.getString("Auto Selector",
-		// defaultAuto);
-		// System.out.println("Auto selected: " + m_autoSelected);
-		// Turny = new AnalogGyro(0);
+		Turny.reset();
+		AutoStep = 1;
+		RobotSide = 1;
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		if (gameData.charAt(1) == 'L') {
+			ScaleSide = 1;
+			// Left = 1, Right = 2
+		} else {
+			ScaleSide = 2;
+			// Left = 1, Right = 2
+
+		}
+	}
+
+	public void teleipInit() {
+		PizzaTacoDrive = new DifferentialDrive(Left, Right);
+		PizzaTacoDrive.setSafetyEnabled(false);
 	}
 
 	/**
@@ -93,18 +126,520 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void autonomousPeriodic() {
+		angleRate = Turny.getRate();
+		SmartDashboard.putNumber("Auto Step", AutoStep);
+		enkersDistance = leftEncoder.getDistance();
+		SmartDashboard.putNumber("enkersDistance", enkersDistance);
+		onkleDistance = rightEncoder.getDistance();
+		SmartDashboard.putNumber("onkleDistance", onkleDistance);
+		scissorsDistance = scissorsEncoder.getDistance();
+		SmartDashboard.putNumber("ScissorsLift", scissorsDistance);
 		angleTurn = Turny.getAngle() % 360;
-		SmartDashboard.putNumber("Gyro angle", Math.round(angleTurn* 100.0)/100.0);
-		if (angleTurn < 90 && angleTurn > 0) {
-		//	FrontLeft.set(.4);
-		} else if (angleTurn > 90) {
-			//FrontLeft.set(1);
-		} else
-			FrontLeft.set(0);
-		if (angleTurn > 360 || angleTurn < -360) {
-			Turny.reset();
+		SmartDashboard.putNumber("Gyro angle", Math.round(angleTurn * 100.0) / 100.0);
+		switch (RobotSide) {
+		case 1:// on left, scale left side
+			switch (ScaleSide) {
+			case 1:
+				switch (AutoStep) {
+				case 1:
+					Claws.set(-5);
+					Timer.delay(.5);
+					AutoStep++;
+				case 2:
+					if (enkersDistance <= 265) {
+						Left.set(0.5);
+						Right.set(-0.5);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					} else {
+						AutoStep++;
+					}
+					break;
+				case 3:
+					if (angleTurn >= -75) {
+						Left.set(0.4);
+						Right.set(0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					} else {
+						AutoStep++;
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 4:
+					if (scissorsDistance <= 75) {
+						Scissors.set(0.7);
+					} else {
+						AutoStep++;
+						Scissors.set(0);
+					}
+					break;
+				}
+
+				break;
+
+			case 2: // on left, scale right side
+				switch (AutoStep) {
+				case 1:
+					Claws.set(-5);
+					Timer.delay(.5);
+					AutoStep++;
+				case 2:
+					if (enkersDistance <= 200) {
+						Left.set(0.5);
+						Right.set(-0.5);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					} else {
+						AutoStep++;
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 3:
+					if (angleTurn >= -83) {
+						Left.set(0.4);
+						Right.set(0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						Left.set(0);
+						Right.set(0);
+						leftEncoder.reset();
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 4:
+					if (enkersDistance <= 209) {
+						Left.set(0.5);
+						Right.set(-0.5);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 5:
+					if (angleTurn <= -5) {
+						Left.set(-0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+						// forward, turn right 90 degrees, forward, turn left 90
+						// degrees, place
+					} else {
+						AutoStep++;
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 6:
+					if (scissorsDistance <= 75) {
+						Scissors.set(0.7);
+					} else {
+						AutoStep++;
+						Scissors.set(0);
+
+					}
+				}
+				break;
+			}
+			break;
+		case 2: // middle scale middle
+			switch (ScaleSide) {
+			case 1:
+				switch (AutoStep) {
+				case 1:
+					Claws.set(-5);
+					Timer.delay(.5);
+					AutoStep++;
+				case 2:
+
+					if (enkersDistance <= 30) {
+						Left.set(0.5);
+						Right.set(-0.5);
+					} else {
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						AutoStep++;
+					}
+					break;
+
+				case 3:
+					if (angleTurn <= 45) {
+						Left.set(-0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 4:
+					if (enkersDistance <= 125) {
+						Left.set(0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						leftEncoder.reset();
+						AutoStep++;
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+					break;
+				case 5:
+					if (angleTurn >= 15) {
+						Left.set(0.4);
+						Right.set(0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					}
+					break;
+				case 6:
+					if (enkersDistance <= 155) {
+						Left.set(0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					}
+					break;
+				case 7:
+					if (angleTurn >= -75) {
+						Left.set(0.4);
+						Right.set(0.4);
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+					}
+					break;
+				case 8:
+					if (enkersDistance <= 10) {
+						Left.set(0.4);
+						Right.set(-0.4);
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+					}
+					break;
+				case 9:
+					if (scissorsDistance <= 75) {
+						Scissors.set(0.7);
+					} else {
+						AutoStep++;
+						Scissors.set(0);
+					}
+					break;
+				}
+				// pause, turn left 60 degrees, forward, turn left 60 degrees
+			case 2: // middle, scale on right side
+				switch (AutoStep) {
+				case 1:
+					Claws.set(-5);
+					Timer.delay(.5);
+					AutoStep++;
+				case 2:
+					if (enkersDistance <= 30) {
+						Left.set(0.5);
+						Right.set(-0.5);
+					} else {
+						leftEncoder.reset();
+						AutoStep++;
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					}
+
+					break;
+
+				case 3:
+					if (angleTurn >= -45) {
+						Left.set(0.4);
+						Right.set(0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					}
+					break;
+				case 4:
+					if (enkersDistance <= 125) {
+						Left.set(0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					}
+					break;
+				case 5:
+					if (angleTurn >= -15) {
+						Left.set(-0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					}
+					break;
+				case 6:
+					if (enkersDistance <= 155) {
+						Left.set(0.4);
+						Right.set(-0.4);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+						System.out.println("Robotside [" + RobotSide + "], Scaleside [" + ScaleSide + "], Autostep ["
+								+ AutoStep + "], left [" + Left.get() + "], Right [" + Right.get()
+								+ "], enkersDistance [" + enkersDistance + "], Angle [" + angleTurn + "]");
+
+					}
+					break;
+				case 7:
+					if (angleTurn <= 75) {
+						Left.set(-0.4);
+						Right.set(-0.4);
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+
+					}
+					break;
+
+				case 8:
+					if (enkersDistance <= 10) {
+						Left.set(0.4);
+						Right.set(-0.4);
+					} else {
+						AutoStep++;
+						leftEncoder.reset();
+						Left.set(0);
+						Right.set(0);
+					}
+					break;
+				case 9:
+					if (scissorsDistance <= 75) {
+						Scissors.set(0.7);
+					} else {
+						AutoStep++;
+						Scissors.set(0);
+					}
+					break;
+				}
+				break;
+			case 3:
+				switch (ScaleSide) {
+				case 1: // right side, scale left side
+					switch (AutoStep) {
+					case 1:
+						Claws.set(-5);
+						Timer.delay(.5);
+						AutoStep++;
+					case 2:
+						if (enkersDistance <= 200) {
+							System.out.println("This is Right");
+							Left.set(0.4);
+							Right.set(-0.4);
+						} else {
+							AutoStep++;
+							leftEncoder.reset();
+							Left.set(0);
+							Right.set(0);
+						}
+						break;
+					case 3:
+						if (angleTurn >= -90) {
+							Left.set(-0.4);
+							Right.set(-0.4);
+						} else {
+							AutoStep++;
+							leftEncoder.reset();
+							Left.set(0);
+							Right.set(0);
+						}
+						break;
+					case 4:
+						if (enkersDistance <= 209) {
+							Left.set(0.4);
+							Right.set(-0.4);
+						} else {
+							AutoStep++;
+							leftEncoder.reset();
+							Left.set(0);
+							Right.set(0);
+						}
+						break;
+					case 5:
+						if (angleTurn >= 5) {
+							Left.set(-0.4);
+							Right.set(-0.4);
+						} else {
+							AutoStep++;
+							leftEncoder.reset();
+							Left.set(0);
+							Right.set(0);
+						}
+						break;
+					case 6:
+						if (scissorsDistance <= 75) {
+							Scissors.set(0.7);
+						} else {
+							AutoStep++;
+							Scissors.set(0);
+						}
+						break;
+					}
+					break;
+				case 2: // right side, scale right side
+					switch (ScaleSide) {
+					case 1:
+						switch (AutoStep) {
+						case 1:
+							Claws.set(-5);
+							Timer.delay(.5);
+							AutoStep++;
+						case 2:
+							if (enkersDistance <= 265) {
+								Left.set(0.4);
+								Right.set(-0.4);
+							} else {
+								AutoStep++;
+								Left.set(0);
+								Right.set(0);
+
+							}
+							break;
+						case 3:
+							if (angleTurn <= 75) {
+								Left.set(-0.4);
+								Right.set(-0.4);
+							} else {
+								AutoStep++;
+								Left.set(0);
+								Right.set(0);
+							}
+							break;
+
+						case 4:
+							if (scissorsDistance <= 75) {
+								Scissors.set(0.7);
+							} else {
+								AutoStep++;
+								Scissors.set(0);
+							}
+							break;
+						}
+
+						break;
+					}
+					break;
+				}
+			}
 		}
 	}
+	// if (angleTurn > 360 || angleTurn < -360) {
+	// Turny.reset();
+	// }
 
 	/**
 	 * This function is called periodically during operator control.
@@ -114,10 +649,27 @@ public class Robot extends IterativeRobot {
 		Pizza = Xbox.getRawAxis(1);
 		Taco = Xbox.getRawAxis(0);
 		PizzaTacoDrive.arcadeDrive(-Pizza, Taco);
-		//angleTurn = Turny.getAngle();
-		//angleRate = Turny.getRate();
-		//SmartDashboard.putNumber("Gyro angle", angleTurn);
-		//SmartDashboard.putNumber("Rate of turning", angleRate);
+		System.out.println("Teleop");
+		angleTurn = Turny.getAngle();
+		angleRate = Turny.getRate();
+		SmartDashboard.putNumber("Gyro angle", angleTurn);
+		SmartDashboard.putNumber("Rate of turning", angleRate);
+		SmartDashboard.putNumber("ScissorsLift", scissorsDistance);
+		if (Xbox.getRawButton(1)) {
+			ScissorLift.set(1);
+		} else if (Xbox.getRawButton(2)) {
+			ScissorLift.set(-1);
+		} else {
+			ScissorLift.set(0);
+		}
+		if (Xbox.getRawButton(3)) {
+			Claws.set(-.5);
+		} else if (Xbox.getRawButton(4)) {
+			Claws.set(.5);
+		} else {
+			Claws.set(0);
+		}
+
 	}
 
 	/**
